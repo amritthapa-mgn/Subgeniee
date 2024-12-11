@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "584393724891",
+    "firebase_url": "https://captioner-c6f78-default-rtdb.firebaseio.com",
+    "project_id": "captioner-c6f78",
+    "storage_bucket": "captioner-c6f78.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:584393724891:android:cd3b4711872f8417f6cdfe",
+        "android_client_info": {
+          "package_name": "com.example.captioneer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHkvjPtFFWrA61VWvfNITkIcUOPjmymyg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
