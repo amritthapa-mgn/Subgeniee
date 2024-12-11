@@ -1,8 +1,9 @@
-// ignore_for_file: library_private_types_in_public_api, unused_element, unused_field
+// ignore_for_file: library_private_types_in_public_api, unused_element, unused_field, avoid_print
 
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:captioneer/screens/summarize_subtitles.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
@@ -328,7 +329,7 @@ class _VideoDisplayState extends State<VideoDisplay> {
                       // Save the changes and update subtitle style
                       setState(() {
                         // Update subtitle style or save settings here
-                        // Example:
+
                         // _subtitleStyle = TextStyle(
                         //   fontSize: fontSize,
                         //   color: fontColor,
@@ -370,35 +371,42 @@ class _VideoDisplayState extends State<VideoDisplay> {
                       style: const TextStyle(fontSize: 16),
                     ),
                     onTap: () {
-                      // Edit Subtitle
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          TextEditingController controller =
-                              TextEditingController(text: subtitle['text']);
-                          return AlertDialog(
-                            title: const Text("Edit Subtitle"),
-                            content: TextField(
-                              controller: controller,
-                              decoration: const InputDecoration(
-                                hintText: 'Edit Subtitle',
-                              ),
-                              onSubmitted: (newText) {
-                                setState(() {
-                                  subtitle['text'] = newText;
-                                });
-                                Navigator.pop(context);
-                              },
-                            ),
-                          );
-                        },
-                      );
+                      // Check if the index is 0 and invoke the edit method
+                      if (_currentPageIndex == 0) {
+                        debugPrint('Editing subtitle: ${subtitle['text']}');
+                        _navigateToEditSubtitles();
+                      }
                     },
                   );
                 },
               );
+
       case 1: // Subtitle Summarization
-        return const Center(child: Text("Subtitle Summarization Content"));
+        return _subtitles.isEmpty
+            ? ElevatedButton(
+                onPressed: _isTranscribing ? null : _startTranscription,
+                child: _isTranscribing
+                    ? const CircularProgressIndicator()
+                    : const Text("Start Generating Subtitles"),
+              )
+            : ListView.builder(
+                itemCount: _subtitles.length,
+                itemBuilder: (context, index) {
+                  final subtitle = _subtitles[index];
+                  return ListTile(
+                    title: Text(
+                      subtitle['text'],
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    onTap: () {
+                      setState(() {
+                        _currentPageIndex = 1; // Navigate to Summarize directly
+                      });
+                      _navigateToSummarisePage(context, _subtitles);
+                    },
+                  );
+                },
+              );
       case 2: // Export
         return ElevatedButton(
           onPressed: () {
@@ -598,14 +606,7 @@ class _VideoDisplayState extends State<VideoDisplay> {
           ? BottomNavigationBar(
               currentIndex: _currentPageIndex,
 
-              onTap: (index) {
-                setState(() {
-                  _currentPageIndex = index;
-                });
-                if (index == 0) {
-                  _navigateToEditSubtitles(); // Navigate to the edit page
-                }
-              },
+              onTap: _handleBottomNavigationTap,
               items: const [
                 BottomNavigationBarItem(
                   icon: Icon(Icons.edit),
@@ -624,7 +625,7 @@ class _VideoDisplayState extends State<VideoDisplay> {
               selectedLabelStyle: const TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue),
+                  color: Color.fromARGB(255, 0, 140, 255)),
               unselectedLabelStyle: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.normal,
@@ -632,6 +633,29 @@ class _VideoDisplayState extends State<VideoDisplay> {
               iconSize: 30, // Adjust the size of the icons
             )
           : null,
+    );
+  }
+
+  void _handleBottomNavigationTap(int index) {
+    setState(() {
+      _currentPageIndex = index;
+    });
+    if (index == 1) {
+      _navigateToSummarisePage(context, _subtitles);
+    }
+  }
+
+  void _navigateToSummarisePage(
+      BuildContext context, List<Map<String, dynamic>> subtitles) {
+    if (subtitles.isEmpty) {
+      debugPrint("No subtitles available for summarization.");
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SummarisePage(subtitles: subtitles),
+      ),
     );
   }
 }
