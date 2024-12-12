@@ -173,6 +173,7 @@ class _VideoDisplayState extends State<VideoDisplay> {
   }
 
   void _navigateToEditSubtitles() {
+    debugPrint('Navigating to edit subtitles...');
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -341,7 +342,6 @@ class _VideoDisplayState extends State<VideoDisplay> {
                     },
                     child: const Text("Save"),
                   ),
-                  //save buttton old
                 ],
               ),
             );
@@ -371,10 +371,21 @@ class _VideoDisplayState extends State<VideoDisplay> {
                       style: const TextStyle(fontSize: 16),
                     ),
                     onTap: () {
-                      // Check if the index is 0 and invoke the edit method
                       if (_currentPageIndex == 0) {
                         debugPrint('Editing subtitle: ${subtitle['text']}');
-                        _navigateToEditSubtitles();
+                        // Use Builder to get a fresh context
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return Builder(
+                              builder: (context) {
+                                debugPrint('Showing bottom sheet');
+                                _navigateToEditSubtitles();
+                                return Container(); // No UI, just to show context used
+                              },
+                            );
+                          },
+                        );
                       }
                     },
                   );
@@ -651,10 +662,14 @@ class _VideoDisplayState extends State<VideoDisplay> {
       debugPrint("No subtitles available for summarization.");
       return;
     }
+
+    // Concatenate subtitles
+    String subtitlesText = subtitles.map((e) => e['text']).join(" ");
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SummarisePage(subtitles: subtitles),
+        builder: (context) => SummarisePage(subtitlesText: subtitlesText),
       ),
     );
   }
