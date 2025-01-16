@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'video_display1.dart';
 import 'package:captioneer/themes/_show_theme_selection_dialog.dart';
 import 'package:http/http.dart' as http;
+import 'dart:async';
 
 class HomePage1 extends StatefulWidget {
   const HomePage1({super.key, required this.title});
@@ -19,6 +20,76 @@ class HomePage1 extends StatefulWidget {
 class _HomePage1State extends State<HomePage1> {
   String? _videoURL;
   String? _selectedLanguage; // Variable to store selected language
+  late Future<List<Map<String, dynamic>>> _videoList;
+  final ScrollController _scrollController =
+      ScrollController(); // Define _videoList
+  @override
+  void initState() {
+    super.initState();
+    // Fetch video data from Supabase when the page loads
+    _videoList = _fetchVideos();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchVideos() async {
+    try {
+      // Get video data from Supabase
+      final response = await Supabase.instance.client
+          .from('videos') // Your table name
+          .select()
+          .then((data) {
+        // Return the list of videos
+        return List<Map<String, dynamic>>.from(data);
+      });
+
+      return response;
+    } catch (e) {
+      print('Error: $e');
+      return [];
+    }
+  }
+
+  Future<void> _deleteVideo(int videoId) async {
+    try {
+      final response = await Supabase.instance.client
+          .from('videos') // Replace with your table name
+          .delete()
+          .eq('id', videoId); // make sure to use execute()
+
+      // Checking for a null error response or null data
+      if (response.error != null) {
+        // Handle error case
+        print('Error deleting video: ${response.error!.message}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text('Error deleting video: ${response.error!.message}')),
+        );
+      } else if (response.data != null && response.data!.isEmpty) {
+        // This handles the case when no data is returned even after a successful delete
+        print('No data returned after deletion.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No data returned after deletion.')),
+        );
+      } else {
+        // Success case
+        print('Video deleted successfully');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Video deleted successfully')),
+        );
+
+        // Refresh the video list after successful deletion
+        setState(() {
+          _videoList = _fetchVideos(); // Fetch the updated list of videos
+        });
+      }
+    } catch (e) {
+      // Handle any unexpected errors
+      print('Exception occurred: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('An unexpected error occurred.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,9 +140,65 @@ class _HomePage1State extends State<HomePage1> {
       ),
       body: Column(
         children: [
-          const Expanded(
-            child: Center(),
+// Inside your build method:
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _videoList,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('No videos found.'));
+                } else {
+                  final videos = snapshot.data!;
+                  return ListView.builder(
+                    controller: _scrollController, // Attach the controller here
+                    itemCount: videos.length,
+                    itemBuilder: (context, index) {
+                      final video = videos[index];
+                      return Card(
+                        elevation: 3,
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(16),
+                          title: Text(
+                            video['project_name'] ?? 'Unknown Project',
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            'Length: ${video['video_length']} seconds',
+                            style: const TextStyle(
+                                fontSize: 14, color: Colors.grey),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              _deleteVideo(video['id']); // Call delete method
+                            },
+                          ),
+                          onTap: () {
+                            // Handle click on the list item
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => VideoDisplay(
+                                    videoPath: video['video_path']),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  );
+                }
+              },
+            ),
           ),
+
           Padding(
             padding: const EdgeInsets.only(left: 20, right: 20, bottom: 100),
             child: SizedBox(
@@ -87,6 +214,7 @@ class _HomePage1State extends State<HomePage1> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                //supabase returns and displays list contents here
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -243,7 +371,7 @@ class _HomePage1State extends State<HomePage1> {
                       ),
                     ),
                     child: const Text(
-                      'Select from Photos',
+                      'Select from Gallery',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -314,7 +442,7 @@ class _HomePage1State extends State<HomePage1> {
           style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w500,
-            color: Colors.black, // Unified color for all items
+            color: Colors.black,
           ),
         ),
       );
@@ -342,10 +470,8 @@ class _HomePage1State extends State<HomePage1> {
         Uri.parse('http://127.0.0.1:8000/transcribe'); // Backend endpoint
     final request = http.MultipartRequest('POST', uri);
 
-    // Add the selected language to the request
     request.fields['language'] = _selectedLanguage!;
 
-    // Send the request
     final response = await request.send();
 
     // Handle the response

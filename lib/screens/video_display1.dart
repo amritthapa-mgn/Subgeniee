@@ -3,10 +3,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:captioneer/screens/homepage1.dart';
 import 'package:captioneer/screens/summarize_subtitles.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class VideoDisplay extends StatefulWidget {
   final String videoPath;
@@ -19,6 +21,7 @@ class VideoDisplay extends StatefulWidget {
 
 class _VideoDisplayState extends State<VideoDisplay> {
   late VideoPlayerController _controllerr;
+
   bool _isPlaying = false;
   List<Map<String, dynamic>> _subtitles = [];
   bool _isTranscribing = false;
@@ -35,10 +38,66 @@ class _VideoDisplayState extends State<VideoDisplay> {
 
   final ScrollController _scrollController = ScrollController();
 
+  late TextEditingController
+      _projectNameController; // Controller for the text field
+  late String _projectName;
+
   @override
   void initState() {
     super.initState();
     _initializeVideoPlayer();
+    _projectNameController =
+        TextEditingController(); // Initialize the controller
+    _projectName = ''; // Initialize project name as an empty string
+  }
+
+  // Show the dialog to input project name
+  void _showProjectNameDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enter Project Name'),
+          content: TextField(
+            controller:
+                _projectNameController, // Use the controller to manage the text input
+            decoration: const InputDecoration(hintText: 'Project Name'),
+            onChanged: (value) {
+              setState(() {
+                _projectName = value; // Update the project name as user types
+              });
+            },
+          ),
+          actions: [
+            // Cancel button
+            TextButton(
+              onPressed: () {
+                // Close the dialog without saving
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            // Save button
+            TextButton(
+              onPressed: () {
+                // Save the project name and call _saveVideo if the project name is not empty
+                if (_projectName.isNotEmpty) {
+                  _saveVideo();
+                  Navigator.of(context).pop(); // Close the dialog
+                } else {
+                  // Show a message if the project name is empty
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Project name cannot be empty')),
+                  );
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -442,6 +501,13 @@ class _VideoDisplayState extends State<VideoDisplay> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(""),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _showProjectNameDialog,
+            // Save button action
+          ),
+        ],
       ),
       body: SafeArea(
         child: Center(
@@ -679,5 +745,39 @@ class _VideoDisplayState extends State<VideoDisplay> {
         builder: (context) => SummarisePage(subtitlesText: subtitlesText),
       ),
     );
+  }
+
+  // Save the video data to Supabase
+  void _saveVideo() async {
+    try {
+      // Get video length from the VideoPlayerController
+      final videoLength = _controllerr.value.duration.inSeconds;
+
+      // Insert video data into Supabase table
+      final response = await Supabase.instance.client
+          .from('videos') // Your table name
+          .insert({
+        'video_path': widget.videoPath, // Replace with the actual video path
+        'project_name': _projectName, // Replace with your project name
+        'subtitles':
+            _subtitles.map((e) => e['text']).toList(), // Subtitle texts
+        'video_length': videoLength, // Duration in seconds
+      });
+
+      // Check if the response is not null
+      if (response != null && response.error != null) {
+        print('Error saving video: ${response.error!.message}');
+      } else {
+        print('Video saved successfully!');
+        Navigator.of(context).pop(); // Pops the current screen
+        Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (context) => const HomePage1(
+            title: '',
+          ),
+        ));
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
   }
 }
