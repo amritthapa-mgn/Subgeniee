@@ -1,8 +1,8 @@
 import 'package:captioneer/auth/auth_gate.dart';
 import 'package:captioneer/themes/theme_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Add this
-import 'package:supabase_flutter/supabase_flutter.dart'; // Import ThemeProvider
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +27,7 @@ class MyApp extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData.light(), // Light theme
       darkTheme: ThemeData.dark(), // Dark theme
       themeMode: themeProvider.themeMode, // Use theme from ThemeProvider

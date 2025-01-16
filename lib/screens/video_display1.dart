@@ -125,9 +125,11 @@ class _VideoDisplayState extends State<VideoDisplay> {
       } catch (e) {
         _showSnackbar('Exception: $e');
       } finally {
-        setState(() {
-          _isTranscribing = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isTranscribing = false;
+          });
+        }
       }
     } else {
       _showSnackbar("No video selected.");
@@ -166,10 +168,15 @@ class _VideoDisplayState extends State<VideoDisplay> {
   }
 
   void _showSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      duration: const Duration(seconds: 3),
-    ));
+    if (mounted) {
+      // Check if the widget is still mounted
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _navigateToEditSubtitles() {
