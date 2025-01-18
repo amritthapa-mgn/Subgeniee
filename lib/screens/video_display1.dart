@@ -1,4 +1,4 @@
-// ignore_for_file: library_private_types_in_public_api, unused_element, unused_field, avoid_print
+// ignore_for_file: library_private_types_in_public_api, unused_element, unused_field, avoid_print, use_build_context_synchronously
 
 import 'dart:async';
 import 'dart:convert';
