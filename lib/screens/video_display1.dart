@@ -3,7 +3,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:captioneer/screens/export_screen.dart';
 import 'package:captioneer/screens/homepage1.dart';
+import 'package:captioneer/screens/subtitle_edit.dart';
 import 'package:captioneer/screens/summarize_subtitles.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -238,225 +240,19 @@ class _VideoDisplayState extends State<VideoDisplay> {
     }
   }
 
-  void _navigateToEditSubtitles() {
-    debugPrint('Navigating to edit subtitles...');
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        double fontSize = 15;
-        Color fontColor = Colors.white;
-        Color backgroundColor = Colors.black54;
-        String fontFamily = 'Default';
-
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Sample Text Display
-                  Text(
-                    "Sample Subtitle Text",
-                    style: TextStyle(
-                      fontSize: fontSize,
-                      color: fontColor,
-                      backgroundColor: backgroundColor,
-                      fontFamily: fontFamily == 'Default' ? null : fontFamily,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Font Size Slider
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("Font Size"),
-                      Slider(
-                        value: fontSize,
-                        min: 10,
-                        max: 30,
-                        divisions: 20,
-                        label: fontSize.round().toString(),
-                        onChanged: (value) {
-                          setModalState(() {
-                            fontSize = value;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-
-                  // Font Color Picker
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("Font Color"),
-                      DropdownButton<Color>(
-                        value: fontColor,
-                        items: [
-                          Colors.white,
-                          Colors.black,
-                          Colors.red,
-                          Colors.blue,
-                          Colors.green,
-                        ]
-                            .map((color) => DropdownMenuItem<Color>(
-                                  value: color,
-                                  child: Container(
-                                    width: 20,
-                                    height: 20,
-                                    color: color,
-                                  ),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setModalState(() {
-                              fontColor = value;
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-
-                  // Background Color Picker
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("Background Color"),
-                      DropdownButton<Color>(
-                        value: backgroundColor,
-                        items: [
-                          Colors.black54,
-                          Colors.transparent,
-                          Colors.white,
-                          Colors.redAccent,
-                          Colors.blueAccent,
-                        ]
-                            .map((color) => DropdownMenuItem<Color>(
-                                  value: color,
-                                  child: Container(
-                                    width: 20,
-                                    height: 20,
-                                    color: color,
-                                  ),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setModalState(() {
-                              backgroundColor = value;
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-
-                  // Font Family Selector
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("Font Family"),
-                      DropdownButton<String>(
-                        value: fontFamily,
-                        items: [
-                          'Default',
-                          'Roboto',
-                          'Arial',
-                          'Courier New',
-                          'Times New Roman',
-                        ]
-                            .map((font) => DropdownMenuItem<String>(
-                                  value: font,
-                                  child: Text(font),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setModalState(() {
-                              fontFamily = value;
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-
-                  //code updated
-
-                  // Save Button before updating
-                  ElevatedButton(
-                    onPressed: () {
-                      // Save the changes and update subtitle style
-                      setState(() {
-                        // Update subtitle style or save settings here
-
-                        // _subtitleStyle = TextStyle(
-                        //   fontSize: fontSize,
-                        //   color: fontColor,
-                        //   backgroundColor: backgroundColor,
-                        //   fontFamily: fontFamily == 'Default' ? null : fontFamily,
-                        // );
-                      });
-                      Navigator.pop(context); // Close the bottom sheet
-                    },
-                    child: const Text("Save"),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   Widget _buildContent() {
     switch (_currentPageIndex) {
       case 0: // Subtitle Edit/Format
-        return _subtitles.isEmpty
-            ? ElevatedButton(
-                onPressed: _isTranscribing ? null : _startTranscription,
-                child: _isTranscribing
-                    ? const CircularProgressIndicator()
-                    : const Text("Start Generating Subtitles"),
-              )
-            : ListView.builder(
-                itemCount: _subtitles.length,
-                itemBuilder: (context, index) {
-                  final subtitle = _subtitles[index];
-                  return ListTile(
-                    title: Text(
-                      subtitle['text'],
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    onTap: () {
-                      if (_currentPageIndex == 0) {
-                        debugPrint('Editing subtitle: ${subtitle['text']}');
-                        // Use Builder to get a fresh context
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return Builder(
-                              builder: (context) {
-                                debugPrint('Showing bottom sheet');
-                                _navigateToEditSubtitles();
-                                return Container(); // No UI, just to show context used
-                              },
-                            );
-                          },
-                        );
-                      }
-                    },
-                  );
-                },
-              );
+        return ElevatedButton(
+          onPressed: () {
+            // Navigate to the VideoExportPage
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SubtitleEditPage()),
+            );
+          },
+          child: const Text("Export Subtitles"),
+        );
 
       case 1: // Subtitle Summarization
         return _subtitles.isEmpty
@@ -487,10 +283,15 @@ class _VideoDisplayState extends State<VideoDisplay> {
       case 2: // Export
         return ElevatedButton(
           onPressed: () {
-            _showSnackbar("Subtitles exported!");
+            // Navigate to the VideoExportPage
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const VideoExportPage()),
+            );
           },
           child: const Text("Export Subtitles"),
         );
+
       default:
         return const SizedBox.shrink();
     }
@@ -726,6 +527,16 @@ class _VideoDisplayState extends State<VideoDisplay> {
     });
     if (index == 1) {
       _navigateToSummarisePage(context, _subtitles);
+    } else if (index == 2) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const VideoExportPage()),
+      );
+    } else if (index == 0) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const SubtitleEditPage()),
+      );
     }
   }
 

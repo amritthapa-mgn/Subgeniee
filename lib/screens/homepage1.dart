@@ -432,7 +432,7 @@ class _HomePage1State extends State<HomePage1> {
   List<DropdownMenuItem<String>> _buildDropdownItems() {
     final languages = [
       'US - English🇺🇸 ',
-      'Nepali - नेपाली🇳🇵',
+      // 'Nepali - नेपाली🇳🇵',
     ]; // List of languages
     return languages.map((language) {
       return DropdownMenuItem<String>(
